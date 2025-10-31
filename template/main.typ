@@ -34,7 +34,6 @@
   ),
   anonymize: anonymize,
   hyphenate: hyphenate,
-  references: bibliography("bibliography.bib", style: "apa"),
 )
 
 = General Formatting Instructions
@@ -117,3 +116,6 @@ Use a first level section heading, "References", as shown below. Use a hanging i
   @Matlock2001
   @ShragerLangley1990a
 ]
+
+// Bibliography (uses BibLaTeX .bib file and APA style)
+#bibliography("bibliography.bib", style: "apa")
