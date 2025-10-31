@@ -21,8 +21,8 @@ In the [Typst web app](https://typst.app/), click "Start from template" on the d
 You can use the [Typst CLI](https://github.com/typst/typst) to initialize the template locally:
 
 ```bash
-typst init @preview/cogsci
-cd cogsci
+typst init @preview/cogsci-conference
+cd cogsci-conference
 ```
 
 ### (3) Import the template functions
@@ -30,7 +30,7 @@ cd cogsci
 The API is described in the [Parameters](#parameters) section below.
 
 ```typst
-#import "@preview/cogsci:0.1.0": cogsci, format-authors
+#import "@preview/cogsci-conference:0.1.0": cogsci, format-authors
 
 #show: cogsci.with(
   title: [CogSci Typst Template],
