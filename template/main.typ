@@ -34,7 +34,7 @@
   ),
   anonymize: anonymize,
   hyphenate: hyphenate,
-  references: bibliography("references.bib", style: "apa"),
+  references: bibliography("bibliography.bib", style: "apa"),
 )
 
 = General Formatting Instructions
