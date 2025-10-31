@@ -33,7 +33,7 @@ It's recommended that you use a [PDF standard](https://www.adobe.com/uk/acrobat/
 typst compile --pdf-standard a-3u main.typ main.pdf
 ```
 
-If you're using Typst locally (rather than the web app), I highly recommend trying the [Tinymist](https://github.com/Myriad-Dreamin/tinymist) extension for [Visual Studio Code](https://code.visualstudio.com/). It makes for a superb writing experience.
+If you're using Typst locally (rather than the web app), I highly recommend trying the [Tinymist](https://myriad-dreamin.github.io/tinymist/) extension for [Visual Studio Code](https://code.visualstudio.com/): [Tinymist Typst](https://marketplace.visualstudio.com/items?itemName=myriad-dreamin.tinymist). It makes for a superb writing experience.
 
 ## TWO IMPORTANT NOTES
 
@@ -47,9 +47,9 @@ If you're using Typst locally (rather than the web app), I highly recommend tryi
 
    - An online proceedings will be published by the Cognitive Science Society. At the time of final (camera-ready) submission authors will be required to agree to release of their proceedings contribution under a CC-BY license. This means that authors allow free reuse of their work provided the original authors are attributed. Please see the submissions website for more details.
 
-## Key Parameters
+## Parameters
 
-The `cogsci()` function accepts the following parameters:
+The `cogsci()` template function accepts the following parameters:
 
 ### Document Metadata
 
@@ -70,11 +70,11 @@ The `cogsci()` function accepts the following parameters:
 
 - **`abstract`** (content): The paper abstract. Will be formatted according to CogSci style.
 
-- **`keywords`** (array): Array of keyword strings, e.g., `("cognitive science", "typst", "template")`.
+- **`keywords`** (array): Array of keyword strings, e.g., `("Bayesian model", "function learning", "emotion")`.
 
 ### Bibliography
 
-- **`references`** (content): Accepts the result of calling Typst's `bibliography()` function. Pass the `bibliography()` function call directly—do not pass a file path string. The template applies CogSci-specific formatting (APA style) to the bibliography.
+- **`references`** (content): Expects the output of Typst's `bibliography()` function.
 
   ```typst
   #show: cogsci.with(
@@ -83,7 +83,9 @@ The `cogsci()` function accepts the following parameters:
   )
   ```
 
-  **Note**: Use BibLaTeX format (`.bib`), not BibTeX format.
+  Typst's `bibliography()` function accepts a Bib***La***TeX `.bib` file or a Hayagriva `.yaml`/`.yml` file. 
+  
+  **Note:** If passing a `.bib` file, use the Bib***La***TeX format, not BibTeX.
 
 ### Submission Control
 
@@ -91,7 +93,15 @@ The `cogsci()` function accepts the following parameters:
 
 ### Formatting Options
 
-- **`hyphenate`** (boolean): Set to `false` to disable hyphenation throughout the document (useful for spell-checking). Default is `true`.
+- **`hyphenate`** (boolean): Set to `false` to disable hyphenation throughout the document (useful for proofreading). Default is `true`.
+
+### Manual Overrides
+
+The template exposes manual overrides for `text()`, `page()`, and `document()`. It's advised that you not use these. But if you absolutely need to change the region, papersize or document metadata, then you can override the defaults by supplying a dictionary.
+
+- **`text-kwargs`** (dictionary): expands into `set text(..text-kwargs)`
+- **`page-kwargs`** (dictionary): expands into `set page(..page-kwargs)`
+- **`document-kwargs`** (dictionary): expands into `set document(..document-kwargs)`
 
 ## Preparing an anonymized submission
 
