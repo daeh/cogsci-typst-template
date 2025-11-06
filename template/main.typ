@@ -60,7 +60,7 @@ Third level headings should be 10 point, initial caps, bold, and flush left. Lea
 
 = Formalities, Footnotes, and Floats
 
-Use standard APA citation format. Citations within the text should include the author's last name and year. If the authors' names are included in the sentence, place only the year in parentheses, as in @NewellSimon1972a, but otherwise place the entire reference in parentheses with the authors and year separated by a comma @ChalnickBillman1988a. List multiple references alphabetically and separate them by semicolons @ChalnickBillman1988a @NewellSimon1972a. Use the "et al." construction only after listing all the authors to a publication in an earlier reference and for citations with four or more authors.
+Use standard APA citation format. Citations within the text should include the author's last name and year. If the authors' names are included in the sentence, place only the year in parentheses, as in #cite(<NewellSimon1972a>, form: "prose"), but otherwise place the entire reference in parentheses with the authors and year separated by a comma @ChalnickBillman1988a. List multiple references alphabetically and separate them by semicolons @ChalnickBillman1988a @NewellSimon1972a. Use the "et~al." construction only after listing all the authors to a publication in an earlier reference and for citations with four or more authors.
 
 == Footnotes
 
