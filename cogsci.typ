@@ -3,6 +3,16 @@
 #let latex-mimic = true // Set to false to disable LaTeX visual mimicry features
 // #let latex-mimic = false
 
+/// Adds ad hoc vertical padding to adjust page layout to better match the output of the LaTeX template.
+///
+/// LaTeX uses flexible spacing to align the last line of a column with the bottom of the page, whereas Typst does not. For the sake of matching the appearance of LaTeX output, we add some ad hoc vertical space.
+///
+/// Arguments:
+///   amount (fraction, relative): How much spacing to insert.
+///
+/// Returns: v(amount, weak: false)
+#let ad-hoc-padding(amount) = if latex-mimic { v(amount, weak: false) } else { none }
+
 /// Displays the anonymous author placeholder for blind review submissions.
 ///
 /// Returns: Content showing "Anonymous CogSci submission" in the required style.
@@ -360,36 +370,34 @@
     box[#text(it.body, size: 10pt, weight: "bold")#h(1em, weak: false)]
   }
 
-  // Footnote configuration matching LaTeX cogsci.sty
-  // LaTeX places footnotes at bottom of page (spanning both columns) in two-column layout
-  // footnotesep: 6.65pt (line 185)
-  // footnotesize: 9pt (line 238)
-  // footnoterule: 5pc wide horizontal rule (line 187)
+  /* FOOTNOTES
+  __Explicit__
+  <<Indicate footnotes with a number in the text. Place the footnotes in 9 point font at the bottom of the column on which they appear. Precede the footnote block with a horizontal rule.>>
+
+  __LaTeX__ (cogsci.sty lines 185-187):
+  \skip\footins: 9pt plus 4pt minus 2pt
+  ( \skip\footins - |\kern-3pt| = 9pt - 3pt = 6pt clearance )
+  \footnoterule: \kern-3pt \hrule width 5pc \kern 2.6pt
+  ( 5pc = 60pt wide rule )
+  \footnotesep: 6.65pt
+  */
   set footnote(numbering: "1")
 
-  // Custom footnote rule matching LaTeX (5pc = 60pt wide)
   set footnote.entry(
     separator: line(length: 60pt, stroke: 0.5pt),
-    gap: 5pt, // LaTeX \footnotesep
+    gap: if latex-mimic { 4.6pt } else { 0.5em },
+    indent: if latex-mimic { 12pt } else { indent },
+    clearance: if latex-mimic { 6pt } else { 1em },
   )
 
   show footnote.entry: it => {
-    set text(size: 9pt) // LaTeX \footnotesize (line 238): 9pt font, 9pt baselineskip
+    set text(size: 9pt)
     set par(
-      first-line-indent: 0pt,
-      hanging-indent: 0.5em,
-      leading: calc-leading(9pt, 9pt), // Single spacing: 9pt baseline - (0.6621 × 9pt) = 3.04pt
+      first-line-indent: if latex-mimic { 9pt } else { indent },
+      hanging-indent: 0pt,
+      leading: calc-leading(9pt, 9pt),
+      spacing: calc-leading(9pt, 9pt),
     )
-    it
-  }
-
-  // Figure and table caption configuration
-  // LaTeX default: 10pt font for captions (same as body text)
-  // Table captions appear above the table, figure captions below
-  set figure(numbering: "1")
-
-  show figure.caption: it => {
-    set par(first-line-indent: 0pt)
     it
   }
 
@@ -400,6 +408,11 @@
   __LaTeX__
   \abovecaptionskip default is only 10pt, not 12pt
   */
+  set figure(numbering: "1")
+  show figure.caption: it => {
+    set par(first-line-indent: 0pt)
+    it
+  }
   show figure: set block(spacing: if latex-mimic { 10pt } else { 12pt })
   show figure: set figure(gap: if latex-mimic { 10pt } else { 12pt })
 
