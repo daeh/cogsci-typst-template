@@ -1,7 +1,7 @@
 // CogSci Conference Template
 
-#let latex-mimic = true // Set to false to disable LaTeX visual mimicry features
-// #let latex-mimic = false
+#let _mimic-latex = true // Set to false to disable LaTeX visual mimicry features
+// #let _mimic-latex = false
 
 /// Adds ad hoc vertical padding to adjust page layout to better match the output of the LaTeX template.
 ///
@@ -11,12 +11,12 @@
 ///   amount (fraction, relative): How much spacing to insert.
 ///
 /// Returns: v(amount, weak: false)
-#let ad-hoc-padding(amount) = if latex-mimic { v(amount, weak: false) } else { none }
+#let ad-hoc-padding(amount) = if _mimic-latex { v(amount, weak: false) } else { none }
 
 /// Displays the anonymous author placeholder for blind review submissions.
 ///
 /// Returns: Content showing "Anonymous CogSci submission" in the required style.
-#let anonymous-authors = {
+#let _anonymous-authors = {
   align(center)[
     #block(above: 12pt, below: 0pt)[
       #text(size: 11pt, weight: "bold")[
@@ -92,7 +92,7 @@
     align(center)[
       #for (i, author) in authors.enumerate() {
         // Add spacing before each author (including first, which comes after title)
-        block(above: if latex-mimic { 16pt } else { 12pt }, below: 0pt)[
+        block(above: if _mimic-latex { 16pt } else { 12pt }, below: 0pt)[
           #text(size: 11pt, weight: "bold")[
             #author.name
             #if "email" in author [ (#author.email)]
@@ -102,7 +102,7 @@
       }
     ]
   } else {
-    anonymous-authors
+    _anonymous-authors
   }
 }
 
@@ -230,7 +230,7 @@
   __LaTeX__
   \parindent 10pt (cogsci.sty line 192)
   */
-  let indent = if latex-mimic { 10pt } else { 1in / 8 }
+  let indent = if _mimic-latex { 10pt } else { 1in / 8 }
 
   /* PAGE
   __Explicit__
@@ -298,6 +298,39 @@
     // ),
   )
 
+  /* MATH FONT
+  __LaTeX__
+  The LaTeX template uses \usepackage{pslatex} which is deprecated.
+  pslatex uses the mathptm package for math, which provides:
+  - Symbol font for Greek letters (upright, not italic)
+  - Zapf Chancery for calligraphic alphabet
+  - No bold math fonts
+
+  __Typst__
+  We use "New Computer Modern Math" as a modern replacement for mathptm.
+  Note that "TeX Gyre Termes Math" is a modern OpenType math font that is Times-compatible and provides proper math typography (italic Greek, variants, bold, etc.), but it is not included with Typst by default.
+  */
+  show math.equation: set text(font: "New Computer Modern Math")
+
+  /* MATH EQUATION SETTINGS
+  __LaTeX__ (cogsci.sty lines 228-231)
+  \abovedisplayskip 7pt plus2pt minus5pt
+  \belowdisplayskip \abovedisplayskip
+  \abovedisplayshortskip 0pt plus3pt
+  \belowdisplayshortskip 4pt plus3pt minus3pt
+  Note: These are smaller than LaTeX defaults (12pt), appropriate for two-column format.
+
+  __Typst__
+  Typst doesn't distinguish between "short" and "long" display skips.
+  Using the base value (7pt) for spacing.
+  */
+
+  // Display equation spacing (matches LaTeX \abovedisplayskip/\belowdisplayskip)
+  // show math.equation.where(block: true): set block(
+  //   above: 7pt, // LaTeX: 7pt plus 2pt minus 5pt
+  //   below: 7pt, // LaTeX: same as above
+  // )
+
   // List spacing configuration (matches LaTeX cogsci.sty)
   set list(
     tight: false,
@@ -330,7 +363,7 @@
   show heading.where(level: 1): it => {
     set block(
       above: 12pt,
-      below: if latex-mimic { 6pt } else { 12pt / 4 },
+      below: if _mimic-latex { 6pt } else { 12pt / 4 },
     )
     set text(size: 12pt, weight: "bold", bottom-edge: "bounds")
     align(center, it)
@@ -349,7 +382,7 @@
   show heading.where(level: 2): it => {
     set block(
       above: 12pt,
-      below: if latex-mimic { 6pt } else { 12pt / 4 },
+      below: if _mimic-latex { 6pt } else { 12pt / 4 },
     ) // explicitly, it should be `block(above: 11pt, below: 3pt)`
     set text(size: 11pt, weight: "bold", bottom-edge: "bounds")
     it
@@ -385,15 +418,15 @@
 
   set footnote.entry(
     separator: line(length: 60pt, stroke: 0.5pt),
-    gap: if latex-mimic { 4.6pt } else { 0.5em },
-    indent: if latex-mimic { 12pt } else { indent },
-    clearance: if latex-mimic { 6pt } else { 1em },
+    gap: if _mimic-latex { 4.6pt } else { 0.5em },
+    indent: if _mimic-latex { 12pt } else { indent },
+    clearance: if _mimic-latex { 6pt } else { 1em },
   )
 
   show footnote.entry: it => {
     set text(size: 9pt)
     set par(
-      first-line-indent: if latex-mimic { 9pt } else { indent },
+      first-line-indent: if _mimic-latex { 9pt } else { indent },
       hanging-indent: 0pt,
       leading: calc-leading(9pt, 9pt),
       spacing: calc-leading(9pt, 9pt),
@@ -413,8 +446,8 @@
     set par(first-line-indent: 0pt)
     it
   }
-  show figure: set block(spacing: if latex-mimic { 10pt } else { 12pt })
-  show figure: set figure(gap: if latex-mimic { 10pt } else { 12pt })
+  show figure: set block(spacing: if _mimic-latex { 10pt } else { 12pt })
+  show figure: set figure(gap: if _mimic-latex { 10pt } else { 12pt })
 
   /* TABLES
   __Explicit__
@@ -467,19 +500,19 @@
     }
     block(above: 12pt, below: 12pt)[
       #if anonymize {
-        anonymous-authors
+        _anonymous-authors
       } else {
         authors
       }
     ]
-    v(if latex-mimic { 2em } else { 12pt * 2 }, weak: false) // LaTeX \vskip 2em at end of titlebox (line 161)
+    v(if _mimic-latex { 2em } else { 12pt * 2 }, weak: false) // LaTeX \vskip 2em at end of titlebox (line 161)
   }
 
   context {
     let measured = measure(titlebox-content)
     let latex-titlebox-height = 5cm + 2pt
     let max-height-explicit = 2.75in - 1in // Maximum space from top margin (1in) to start of abstract
-    let max-height = if latex-mimic { latex-titlebox-height } else { max-height-explicit }
+    let max-height = if _mimic-latex { latex-titlebox-height } else { max-height-explicit }
     let actual-height = measured.height
     let exceeds-max = actual-height > max-height
 
@@ -539,8 +572,8 @@
       #set par(
         first-line-indent: indent,
         justify: true,
-        leading: if latex-mimic { calc-leading(9pt, 9pt) } else { calc-leading(10pt, 9pt) }, // Word uses 10pt line spacing, but latex uses 9pt
-        spacing: if latex-mimic { calc-leading(9pt, 9pt) } else { calc-leading(10pt, 9pt) },
+        leading: if _mimic-latex { calc-leading(9pt, 9pt) } else { calc-leading(10pt, 9pt) }, // Word uses 10pt line spacing, but latex uses 9pt
+        spacing: if _mimic-latex { calc-leading(9pt, 9pt) } else { calc-leading(10pt, 9pt) },
       )
 
       /*
@@ -567,7 +600,7 @@
       }
 
       #if keywords != none and keywords.len() > 0 {
-        block(above: if latex-mimic { 7pt } else { 9pt }, format-keywords(keywords)) // should be 9 but LaTeX uses less
+        block(above: if _mimic-latex { 7pt } else { 9pt }, format-keywords(keywords)) // should be 9 but LaTeX uses less
       }
     ]
   ])
