@@ -397,10 +397,12 @@
   Negative afterskip means run-in heading (on same line as following text)
   */
   show heading.where(level: 3): it => {
-    v(-1pt, weak: true) // Pull back from paragraph spacing context // ad-hoc correction to match LaTeX spacing
-    // parbreak()
-    linebreak()
-    box[#text(it.body, size: 10pt, weight: "bold")#h(1em, weak: false)]
+    [#parbreak()
+      #if _mimic-latex {
+        v(-1pt, weak: true) // Pull back from paragraph spacing context // ad-hoc correction to match LaTeX spacing
+      } else { none }
+      \ #text(it.body, size: 10pt, weight: "bold")
+      #h(1em, weak: false)]
   }
 
   /* FOOTNOTES
