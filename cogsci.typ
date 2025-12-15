@@ -14,101 +14,299 @@
 #let ad-hoc-padding(amount) = if _mimic-latex { v(amount, weak: false) } else { none }
 
 
-/// Formats author information according to CogSci conference style.
+/// Formats author and affiliation information according to CogSci conference style.
 ///
-/// Each author's name appears on a separate line in 11pt bold, centered, with optional email address in parentheses. Affiliations appear below names in 10pt regular font.
+/// Authors appear on a single line in 11pt bold, centered, joined with commas
+/// and ampersand. Optional superscript numbers link authors to affiliations.
+/// Affiliations appear below in 10pt regular font.
 ///
-/// ```
-/// // Single author with email and affiliation
+/// Accepts multiple input patterns:
+///
+/// #example(```
+/// // Named parameters with full dictionary structure
 /// #format-authors(
-///   (name: "Author One", email: "a1@ua.edu", affiliation: "Department Details")
+///   authors: (
+///     (name: [Author One], email: "a1@ua.edu", super: [1]),
+///     (name: [Author Two], super: [2]),
+///   ),
+///   affiliations: (
+///     (super: [1], affil: [Department A]),
+///     (super: [2], affil: [Department B]),
+///   ),
 /// )
-/// ```
+/// ```)
 ///
-/// ```
-/// // Multiple authors passed as separate arguments
+/// #example(```
+/// // Positional arguments with tuple affiliations
 /// #format-authors(
-///   (name: "Author One", email: "a1@ua.edu", affiliation: "Department Details"),
-///   (name: "Author Two", email: "a2@ub.edu", affiliation: "Department Details"),
+///   (
+///     (name: [Author One], email: "a1@ua.edu", super: [1]),
+///     (name: [Author Two], super: [2]),
+///   ),
+///   (
+///     ([1], [Department A]),
+///     ([2], [Department B]),
+///   ),
 /// )
-/// ```
+/// ```)
 ///
-/// ```
-/// // Multiple authors passed as array
-/// #let authors = (
-///   (name: "Author One", email: "a1@ua.edu", affiliation: "Department Details"),
-///   (name: "Author Two", email: "a2@ub.edu", affiliation: "Department Details"),
+/// #example(```
+/// // Single shared affiliation (simplest form)
+/// #format-authors(
+///   (
+///     (name: [Author One], email: "a1@ua.edu"),
+///     (name: [Author Two]),
+///   ),
+///   [Department A],
 /// )
-/// #format-authors(authors)
-/// ```
+/// ```)
 ///
 /// Each author dictionary must contain:
-/// - `name` (content, str): Author's full name (required)
+/// - `name` (content): Author's full name (required)
 /// - `email` (str): Email address (optional)
-/// - `affiliation` (content, str): Institution and address (optional)
+/// - `super` (content): Superscript linking to affiliation (optional)
 ///
-/// - authors (dictionary, array): Variable number of author dictionaries, or a single array containing author dictionaries.
+/// Affiliations can be:
+/// - Array of dictionaries: `((super: [1], affil: [Dept A]), ...)`
+/// - Array of tuples: `(([1], [Dept A]), ...)`
+/// - Single content: `[Shared Department]`
 ///
+/// - authors (array): Array of author dictionaries, or first positional argument
+/// - affiliations (array, content): Affiliation data, or second positional argument
 /// -> content, none
-#let format-authors(..authors) = {
-  // Extract positional arguments as array of author dictionaries
-  let author-list = authors.pos()
+#let format-authors(..args, authors: none, affiliations: none) = {
+  // Internal: Normalizes heterogeneous author/affiliation input formats.
+  //
+  // Parameters:
+  //   authors (array, none): Array of author dicts, or first positional arg
+  //   affiliations (array, content, str, none): Affiliation data, or second positional arg
+  //
+  // Returns (dictionary):
+  //   authors (array): ((name: content, email: str|none, super: content), ...)
+  //   affiliations (array): ((super: content, affil: content), ...)
+  let authors-structure-input(
+    authors: none,
+    affiliations: none,
+    ..args,
+  ) = {
+    // Resolve authors and affiliations from either named or positional args
+    let resolved-authors = if authors != none {
+      authors
+    } else if args.pos().len() >= 1 {
+      args.pos().at(0)
+    } else {
+      ()
+    }
 
-  // Support both calling patterns:
-  // - format-authors(author-dict-1, author-dict-2, ...)
-  // - format-authors((author-dict-1, author-dict-2, ...)) where authors-info is an array
-  if author-list.len() == 1 and type(author-list.at(0)) == array {
-    author-list = author-list.at(0)
-  }
+    let resolved-affiliations = if affiliations != none {
+      affiliations
+    } else if args.pos().len() >= 2 {
+      args.pos().at(1)
+    } else {
+      ()
+    }
 
-  // Validate each author is a dictionary with required 'name' key
-  for (i, author) in author-list.enumerate() {
-    assert(
-      type(author) == dictionary,
-      message: "format-authors: author at index " + str(i) + " must be a dictionary, got " + str(type(author)),
-    )
-    assert(
-      "name" in author,
-      message: "format-authors: author at index " + str(i) + " must have a 'name' key",
-    )
-  }
+    // Validate resolved-authors is an array
+    if resolved-authors != () {
+      assert(
+        type(resolved-authors) == array,
+        message: "format-authors: 'authors' must be an array, got " + str(type(resolved-authors)),
+      )
+    }
 
-  /* AUTHORS
-  __Explicit__
-  «In the initial submission, the phrase "Anonymous CogSci submission" should appear below the title, centered, in 11 point bold font. In the final submission, each author's name should appear on a separate line, 11 point bold, and centered, with the author's email address in parentheses. Under each author's name list the author's affiliation and postal address in ordinary 10 point type.»
-
-  __LaTeX__
-  \large\bf = 11pt font with 13pt leading (cogsci.sty line 241)
-  */
-  if author-list.len() > 0 {
-    return align(center)[
-      #for (i, author) in author-list.enumerate() {
-        // Add spacing before each author (including first, which comes after title)
-        block(above: if _mimic-latex { 16pt } else { 12pt }, below: 0pt)[
-          #text(size: 11pt, weight: "bold")[
-            #author.name
-            #if "email" in author [(#author.email)]
-          ]
-          #if "affiliation" in author [#text(size: 10pt, weight: "regular")[#linebreak()#author.affiliation]]
-        ]
+    // Normalize affiliations to standard format
+    let normalize-affiliations(affils) = {
+      // Case: Empty/none
+      if affils == none or affils == () {
+        return ()
       }
-    ]
-  } else {
+
+      // Case: Single content value (one shared affiliation)
+      if type(affils) == content {
+        return ((super: [], affil: affils),)
+      }
+
+      // Case: Single string value
+      if type(affils) == str {
+        return ((super: [], affil: [#affils]),)
+      }
+
+      // Case: Array of affiliations
+      if type(affils) == array {
+        return affils
+          .enumerate()
+          .map(((idx, a)) => {
+            // Already in dict format with affil key
+            if type(a) == dictionary and "affil" in a {
+              (
+                super: a.at("super", default: []),
+                affil: a.affil,
+              )
+            } // Tuple format: (super, affil)
+            else if type(a) == array and a.len() >= 2 {
+              (
+                super: a.at(0),
+                affil: a.at(1),
+              )
+            } // Single-element tuple: (affil,) - no super
+            else if type(a) == array and a.len() == 1 {
+              (super: [], affil: a.at(0))
+            } // Single content in array (no super)
+            else if type(a) == content {
+              (super: [], affil: a)
+            } // Single string in array
+            else if type(a) == str {
+              (super: [], affil: [#a])
+            } else {
+              assert(
+                false,
+                message: "format-authors: affiliation at index "
+                  + str(idx)
+                  + " has invalid type: "
+                  + str(type(a))
+                  + ". Expected dictionary with 'affil' key, array (super, affil), or content.",
+              )
+            }
+          })
+      }
+
+      assert(
+        false,
+        message: "format-authors: 'affiliations' has invalid type: "
+          + str(type(affils))
+          + ". Expected array, content, or string.",
+      )
+    }
+
+    // Normalize authors to standard format
+    let normalize-authors(auths) = {
+      if auths == () or auths == none {
+        return ()
+      }
+
+      auths
+        .enumerate()
+        .map(((idx, a)) => {
+          // Validate author entry is a dictionary
+          assert(
+            type(a) == dictionary,
+            message: "format-authors: author at index " + str(idx) + " must be a dictionary, got " + str(type(a)),
+          )
+          assert(
+            "name" in a,
+            message: "format-authors: author at index " + str(idx) + " must have a 'name' key",
+          )
+
+          let name = a.name
+          let email = a.at("email", default: none)
+
+          // Normalize super: treat none and [] as equivalent (no superscript)
+          let super-val = a.at("super", default: [])
+          if super-val == none {
+            super-val = []
+          }
+
+          (
+            name: name,
+            email: email,
+            super: super-val,
+          )
+        })
+    }
+
+    // Process affiliations first
+    let normalized-affiliations = normalize-affiliations(resolved-affiliations)
+
+    // Process authors
+    let normalized-authors = normalize-authors(resolved-authors)
+
+    // Return standardized structure
+    (
+      authors: normalized-authors,
+      affiliations: normalized-affiliations,
+    )
+  }
+
+  // Use authors-structure-input to normalize all input formats
+  let data = authors-structure-input(..args, authors: authors, affiliations: affiliations)
+  let author-list = data.authors
+  let affil-list = data.affiliations
+
+  if author-list.len() == 0 {
     return none
   }
+
+  // Helper to check if super is "empty" (none or empty content)
+  let is-empty-super(s) = s == none or s == []
+
+  // Build author entries: name + optional superscript + optional email
+  let author-entries = author-list.map(entry => {
+    let has-super = not is-empty-super(entry.super)
+    let has-email = entry.email != none
+
+    if has-email {
+      if has-super {
+        [#entry.name (#entry.email)#super[#entry.super]]
+      } else {
+        [#entry.name (#entry.email)]
+      }
+    } else {
+      if has-super {
+        [#entry.name#super[#entry.super]]
+      } else {
+        [#entry.name]
+      }
+    }
+  })
+
+  // Join with comma/ampersand, boxing to maintain baseline alignment
+  let authors-line = if author-entries.len() == 0 {
+    []
+  } else if author-entries.len() == 1 {
+    box(author-entries.at(0))
+  } else if author-entries.len() == 2 {
+    box(author-entries.at(0)) + [ ] + box([&~] + author-entries.at(1))
+  } else {
+    // 3+ authors: "A, B, ... & Z"
+    let parts = author-entries.slice(0, -1).map(e => box[#e,])
+    parts.join([ ]) + [ ] + box([&~] + author-entries.last())
+  }
+
+  // Build affiliation lines: superscript label + affiliation text
+  let affil-lines = affil-list.map(entry => {
+    let has-super = not is-empty-super(entry.super)
+    if has-super {
+      super[#entry.super~] + entry.affil
+    } else {
+      entry.affil
+    }
+  })
+
+  let divider = linebreak
+  return align(center)[
+    #set par(justify: false)
+
+    #set par(
+      leading: 3pt,
+      spacing: 3pt,
+    ) if _mimic-latex
+
+    #if _mimic-latex { v(0.7pt) }
+
+    #text(size: 11pt, weight: "bold")[#authors-line]
+    #if affil-lines.len() > 0 {
+      divider()
+      text(size: 10pt, weight: "regular")[#affil-lines.join(divider())]
+    }
+  ]
 }
 
 
 /// Main CogSci conference template function.
 ///
-/// This function applies the complete CogSci conference paper formatting to
-/// your document, including page layout, typography, and structural elements.
-/// It matches the official LaTeX template's visual output.
+/// This function applies the complete CogSci conference paper formatting to your document, including page layout, typography, and structural elements. It matches the official LaTeX template's visual output.
 ///
-/// The template handles all standard conference requirements including title
-/// formatting (14pt bold, centered), author blocks, abstract (9pt), keywords,
-/// and proper page margins. Use with a show rule to apply the template to
-/// your entire document.
+/// The template handles all standard conference requirements including title formatting (14pt bold, centered), author blocks, abstract (9pt), keywords, and proper page margins. Use with a show rule to apply the template to your entire document.
 ///
 /// ```
 /// #show: cogsci.with(
@@ -148,7 +346,7 @@
 /// -> content
 #let cogsci(
   title: [],
-  authors: [],
+  author-info: [],
   abstract: [],
   keywords: (),
   anonymize: false,
@@ -166,9 +364,9 @@
   )
 
   assert(
-    type(authors) == content or authors == none,
-    message: "cogsci: authors must be content (e.g. the output of the format-authors() helper function), got "
-      + str(type(authors)),
+    type(author-info) == content or author-info == none,
+    message: "cogsci: author-info must be content (e.g. the output of the format-authors() helper function), got "
+      + str(type(author-info)),
   )
 
   assert(
@@ -191,17 +389,7 @@
     message: "cogsci: hyphenate must be a boolean, got " + str(type(hyphenate)),
   )
 
-  /// The anonymous authors placeholder for blind review submissions.
-  /// -> content
-  let anonymous-authors = {
-    align(center)[
-      #block(above: 12pt, below: 0pt)[
-        #text(size: 11pt, weight: "bold")[
-          Anonymous CogSci submission
-        ]
-      ]
-    ]
-  }
+  let x-target = sys.inputs.at("x-target", default: "pdf")
 
   // Set document metadata
   let doc-specs = (
@@ -213,28 +401,48 @@
   if anonymize {
     doc-specs = doc-specs + (author: "Anonymous")
   }
-  set document(..doc-specs)
+  set document(..doc-specs) if x-target == "pdf"
 
-  // Typst leading calculation constants for Times New Roman
+  // Leading Calculation for TeX Gyre Termes
   //
-  // Times New Roman cap-height is 66.21% of font size
-  // Source: https://www.readz.com/web-fonts-and-typography
+  // Typst's `leading` parameter measures the space between the bottom edge of one line
+  // and the top edge of the next line. This differs from traditional typography where
+  // "leading" means baseline-to-baseline distance.
   //
-  // Typst's leading parameter measures space between bottom of one line and top of next.
-  // With default settings (top-edge: "cap-height", bottom-edge: "baseline"):
-  //   baseline-to-baseline = leading + cap-height
-  //   leading = baseline-to-baseline - cap-height
-  //   leading = baseline-to-baseline - (cap-height-ratio * font_size)
-  let cap-height-ratio = 0.6621
+  // With `top-edge: "cap-height"` and `bottom-edge: "descender"`:
+  //   - Line height = cap-height + |descender|
+  //   - baseline-to-baseline = leading + cap-height + |descender|
+  //   - leading = baseline-to-baseline - (cap-height + |descender|) × font_size
+  //
+  // TeX Gyre Termes font metrics (from OS/2 table, 1000 units per em):
+  //   - Cap Height: 662 (0.662 em)
+  //   - Typo Descender: -217 (0.217 em absolute)
+  //   - Theoretical ratio: 0.662 + 0.217 = 0.879 em
+  //
+  // However, empirical testing shows 0.8835 produces better LaTeX matching than 0.879.
+  // Possible explanations:
+  //   - Typst may apply internal padding/clearance beyond declared glyph bounds
+  //   - Font hinting or rendering adjustments at specific sizes
+  //   - LaTeX's own line spacing involves additional subtle factors
+  //   - Interaction between Typst's text layout engine and font metrics
+  //
+  // The difference is small (0.0045 em = 0.045pt at 10pt) but accumulates over lines.
+  //
+  // Reference: https://github.com/typst/typst/issues/4224
 
   /// Calculate Typst leading parameter for desired baseline-to-baseline spacing.
   ///
-  /// - baseline (length): Desired baseline-to-baseline distance.
-  /// - font-size (length): Font size.
+  /// LaTeX uses `\@setfontsize\command{fontsize}{baselineskip}`, e.g. `\@setfontsize\normalsize{10}{12}`.
+  /// This function uses the same parameter order for consistency.
   ///
+  /// Formula: leading = baseline - line-height-ratio × font_size
+  ///
+  /// - font-size (length): Font size (first argument, matching LaTeX order).
+  /// - baseline (length): Desired baseline-to-baseline distance (second argument).
   /// -> length
-  let calc-leading(baseline, font-size) = {
-    baseline - (cap-height-ratio * font-size)
+  let line-height-ratio = 0.8835 // empirically tuned (theoretical: 0.879 = cap-height + |descender|)
+  let calc-leading(font-size, baseline) = {
+    baseline - (line-height-ratio * font-size)
   }
 
   /* INDENTATION
@@ -242,13 +450,32 @@
   «Indent the first line of each paragraph by 1/8 inch (except for the first paragraph of a new section). Do not add extra vertical space between paragraphs.»
 
   __LaTeX__
-  \parindent 10pt (cogsci.sty line 192)
+  \parindent=0.125in
   */
-  let indent = if _mimic-latex { 10pt } else { 1in / 8 }
+  let indent = 1in / 8
 
-  /* PAGE
+  /* LINE HEIGHT
   __Explicit__
-  «The text of the paper should be formatted in two columns with an overall width of 7 inches (17.8 cm) and length of 9.25 inches (23.5 cm), with 0.25 inches between the columns. Leave two line spaces between the last author listed and the text of the paper; the text of the paper (starting with the abstract) should begin no less than 2.75 inches below the top of the page. The left margin should be 0.75 inches and the top margin should be 1 inch. *The right and bottom margins will depend on whether you use U.S. letter or A4 paper, so you must be sure to measure the width of the printed text.* Use 10 point Times Roman with 12 point vertical spacing, unless otherwise specified.»
+  «Use 10 point Times Roman with 12 point vertical spacing, unless otherwise specified.»
+
+  __LaTeX__
+  \renewcommand\normalsize{\@setfontsize\normalsize{10}{12}}
+  */
+  let line-height = 12pt
+
+  /* PAGE LAYOUT
+  __Explicit__
+  «The text of the paper should be formatted in two columns with an overall width of 7 inches (17.8 cm) and length of 9.25 inches (23.5 cm), with 0.25 inches between the columns. Leave two line spaces between the last author affiliation and the text of the paper; the text of the paper (starting with the abstract) should begin no less than 2.75 inches below the top of the page. The left margin should be 0.75 inches and the top margin should be 1 inch. *The right and bottom margins will depend on whether you use U.S. letter or A4 paper, so you must be sure to measure the width of the printed text.* Use 10 point Times Roman with 12 point vertical spacing, unless otherwise specified.»
+
+  __LaTeX__
+  \setlength\oddsidemargin{-0.25in}
+  \setlength\maxdepth{3pt}
+  \setlength\textheight{9.25in}
+  \addtolength\textheight{-\maxdepth}
+  \setlength\textwidth{7in}
+  \setlength\columnsep{0.25in}
+  \setlength\topmargin{0in}
+  \setlength\topskip{0.01pt}
   */
   let text-width = 7in // 17.8cm
   let text-height = 9.25in // 23.5cm
@@ -266,14 +493,19 @@
     numbering: none,
     columns: 2,
     ..page-kwargs, // Additional user-specified page settings
-  )
+  ) if x-target == "pdf"
   set columns(gutter: column-gap)
 
   set text(
     /* Global settings */
-    font: "Times New Roman",
+    font: (
+      "TeX Gyre Termes",
+      "Times New Roman",
+    ),
+    top-edge: "cap-height",
+    bottom-edge: "descender",
     lang: "en", // ISO 639-1/2/3 language code
-    // region: "US", // ISO 3166-1 alpha-2 region code
+    region: "US", // ISO 3166-1 alpha-2 region code
     /* Typography */
     kerning: true,
     ligatures: true,
@@ -290,48 +522,46 @@
     ..text-kwargs, // Additional user-specified text settings
   )
 
-  /* BODY
-  __Explicit__
-  «Indent the first line of each paragraph by 1/8 inch (except for the first paragraph of a new section). Do not add extra vertical space between paragraphs.»
-
-  __LaTeX__
-  \normalsize (cogsci.sty line 236)
-  */
-  set par(
-    /* Global settings */
-    justify: true,
-    /* Body settings */
-    first-line-indent: indent,
-    leading: calc-leading(12pt, 10pt), // 12pt baseline - (0.6621 × 10pt) = 5.379pt
-    spacing: calc-leading(12pt, 10pt),
-    /* Microtypography */
-    linebreaks: "optimized",
-    // justification-limits: (
-    //   spacing: (min: 100% * 2 / 3, max: 150%), // The spacing entry defines how much the width of spaces between words may be adjusted.
-    //   tracking: (min: -0.01em, max: 0.01em), // The tracking entry defines how much the spacing between letters may be adjusted.
-    // ),
-  )
-
   /* MATH FONT
-  __LaTeX__
-  The LaTeX template uses \usepackage{pslatex} which is deprecated.
-  pslatex uses the mathptm package for math, which provides:
-  - Symbol font for Greek letters (upright, not italic)
-  - Zapf Chancery for calligraphic alphabet
-  - No bold math fonts
+  __LaTeX__ (cogsci_full_paper_template.tex line 45)
+  \usepackage{newtxtext,newtxmath}
+
+  newtxtext: Text font based on TeX Gyre Termes (Type 1 format for pdfLaTeX).
+  newtxmath: Math font package providing Times-compatible math symbols.
+    - Uses Type 1 fonts (.pfb) with TeX font metrics (.tfm) and virtual fonts (.vf)
+    - Math italic derived from Times, with custom-tuned metrics
+    - Symbols from txfonts with fixes and enhancements
+    - Designed specifically for pdfLaTeX (not OpenType)
 
   __Typst__
-  We use "New Computer Modern Math" as a modern replacement for mathptm.
-  Note that "TeX Gyre Termes Math" is a modern OpenType math font that is Times-compatible and provides proper math typography (italic Greek, variants, bold, etc.), but it is not included with Typst by default.
+  TeX Gyre Termes Math (v1.543): Native OpenType math font with MATH table.
+    - Designed for Unicode engines (XeLaTeX/LuaLaTeX/Typst)
+    - Basic serif script: TeX Gyre Termes (regular, bold, italic, bold italic)
+    - Calligraphic, double-struck, Greek, Hebrew: drawn from scratch
+    - Fraktur: from Leipziger Fraktur (Peter Wiegel)
+    - Sans-serif: from TeX Gyre Heros
+    - Monospaced: from TeX Gyre Cursor
+    - Math extension programmed from scratch
+
+  Note: newtxmath (Type 1) and TeX Gyre Termes Math (OpenType) are distinct fonts
+  with different metrics and symbol coverage. Both are Times-compatible but not
+  identical. Minor visual differences in math rendering may occur.
+
+  New Computer Modern Math: Fallback if TeX Gyre Termes Math unavailable.
+    - Typst's embedded default math font
+    - Modern OpenType implementation of Computer Modern Math
   */
-  show math.equation: set text(font: "New Computer Modern Math")
+  show math.equation: set text(font: (
+    "TeX Gyre Termes Math",
+    "New Computer Modern Math",
+  ))
 
   /* MATH EQUATION SETTINGS
-  __LaTeX__ (cogsci.sty lines 228-231)
-  \abovedisplayskip 7pt plus2pt minus5pt
-  \belowdisplayskip \abovedisplayskip
-  \abovedisplayshortskip 0pt plus3pt
-  \belowdisplayshortskip 4pt plus3pt minus3pt
+  __LaTeX__
+  \abovedisplayskip=7pt plus 2pt minus 5pt
+  \belowdisplayskip=\abovedisplayskip
+  \abovedisplayshortskip=0pt plus 3pt
+  \belowdisplayshortskip=4pt plus 3pt minus 3pt
   Note: These are smaller than LaTeX defaults (12pt), appropriate for two-column format.
 
   __Typst__
@@ -345,13 +575,45 @@
   //   below: 7pt, // LaTeX: same as above
   // )
 
-  // List spacing configuration (matches LaTeX cogsci.sty)
+
+  /* BODY
+  __Explicit__
+  «Indent the first line of each paragraph by 1/8 inch (except for the first paragraph of a new section). Do not add extra vertical space between paragraphs.»
+
+  __LaTeX__
+  \renewcommand\normalsize{\@setfontsize\normalsize{10}{12}}
+  */
+  set par(
+    /* Global settings */
+    justify: true,
+    /* Body settings */
+    first-line-indent: indent,
+    leading: calc-leading(10pt, line-height), // calc-leading(font-size, baseline)
+    spacing: calc-leading(10pt, line-height),
+    /* Microtypography */
+    linebreaks: "optimized",
+    // justification-limits: (
+    //   spacing: (min: 95%, max: 140%), // The spacing entry defines how much the width of spaces between words may be adjusted.
+    //   tracking: (min: -0.005em, max: 0.015em), // The tracking entry defines how much the spacing between letters may be adjusted.
+    // ),
+  )
+
+  /* LISTS
+  __LaTeX__
+  \topsep=4pt plus 1pt minus 2pt
+  \partopsep=1pt plus 0.5pt minus 0.5pt
+  \itemsep=1pt plus 1pt minus 0.5pt
+  \parsep=1pt plus 1pt minus 0.5pt
+  \leftmargin=10pt
+  \labelsep=5pt
+  */
+
   set list(
     tight: false,
     marker: ([•], [◦], [▪]), // Bullet styles
-    indent: indent, // 10pt matches LaTeX \leftmargin
+    indent: indent, // 1/8in matches LaTeX \leftmargin=10pt approximately
     body-indent: 0.5em,
-    spacing: 1pt, // Matches LaTeX \itemsep
+    spacing: 1pt, // Matches LaTeX \itemsep=1pt
   )
 
   set enum(
@@ -361,6 +623,8 @@
     spacing: 1pt,
   )
 
+  /* HEADINGS */
+
   // Disable heading numbering
   set heading(numbering: none)
 
@@ -369,17 +633,25 @@
   «First level headings should be in 12 point, initial caps, bold and centered. Leave one line space above the heading and 1/4 line space below the heading.»
 
   __LaTeX__
-  Section: -1.5ex before, 3pt after, \Large\bf\centering (line 175-176)
-  At 10pt, 1ex ≈ 4.3pt (x-height), so -1.5ex ≈ 6.4pt
+  \def\section{\@startsection{section}{1}{\z@}%
+    {-7pt plus -3pt minus -0pt}%    % beforeskip: 12pt above = 12 - (15 - 10) = 7pt
+    {3pt plus 2pt minus 0pt}%       % afterskip:  3pt below  = 3 - (12 - 12) = 3pt
+    {\Large\bfseries\centering}}
+  \Large = 12pt font, 15pt baselineskip
 
-  Note: Setting bottom-edge to "bounds" ensures spacing is measured from the visual bottom of letters (including descenders), not the baseline.
+  Note: LaTeX's @startsection calculates actual space as:
+    beforeskip_actual = beforeskip + (heading_baselineskip - body_font_size)
+    afterskip_actual = afterskip + (body_baselineskip - heading_font_size)
   */
   show heading.where(level: 1): it => {
     set block(
-      above: 12pt,
-      below: if _mimic-latex { 6pt } else { 12pt / 4 },
+      above: line-height,
+      below: if _mimic-latex { 5.5pt } else { line-height / 4 },
     )
-    set text(size: 12pt, weight: "bold", bottom-edge: "bounds")
+    set text(
+      size: 12pt,
+      weight: "bold",
+    )
     align(center, it)
   }
 
@@ -388,17 +660,18 @@
   «Second level headings should be 11 point, initial caps, bold, and flush left. Leave one line space above the heading and 1/4 line space below the heading.»
 
   __LaTeX__
-  Subsection: -1.5ex before, 3pt after, \large\bf\raggedright (line 177-178)
-
-  Note: Setting bottom-edge to "bounds" ensures spacing is measured from the visual
-  bottom of letters (including descenders), not the baseline.
+  \def\subsection{\@startsection{subsection}{2}{\z@}%
+    {-9pt plus -3pt minus -0pt}%    % beforeskip: 12pt above = 12 - (13 - 10) = 9pt
+    {2pt plus 2pt minus 0pt}%       % afterskip:  3pt below  = 3 - (12 - 11) = 2pt
+    {\large\bfseries\raggedright}}
+  \large = 11pt font, 13pt baselineskip
   */
   show heading.where(level: 2): it => {
     set block(
-      above: 12pt,
-      below: if _mimic-latex { 6pt } else { 12pt / 4 },
+      above: if _mimic-latex { line-height + 0.3pt } else { line-height },
+      below: if _mimic-latex { 5.1pt } else { line-height / 4 },
     ) // explicitly, it should be `block(above: 11pt, below: 3pt)`
-    set text(size: 11pt, weight: "bold", bottom-edge: "bounds")
+    set text(size: 11pt, weight: "bold")
     it
   }
 
@@ -407,48 +680,64 @@
   «Third level headings should be 10 point, initial caps, bold, and flush left. Leave one line space above the heading, but no space after the heading.»
 
   __LaTeX__
-  Subsubsection: -6pt before, -1em after, \normalsize\bf (line 179-180)
-  Negative afterskip means run-in heading (on same line as following text)
+  \def\subsubsection{\@startsection{subparagraph}{3}{\z@}%
+    {-9pt plus -3pt minus -0pt}%    % beforeskip: 12pt above (empirically 9pt fits better)
+    {-1em}%                         % afterskip: negative = run-in heading
+    {\normalsize\bfseries}}
+  \normalsize = 10pt font, 12pt baselineskip
+  Negative afterskip means run-in heading (inline with following text)
   */
+
   show heading.where(level: 3): it => {
-    [#parbreak()
-      #if _mimic-latex {
-        v(-1pt, weak: true) // Pull back from paragraph spacing context // ad-hoc correction to match LaTeX spacing
-      } else { none }
-      \ #text(it.body, size: 10pt, weight: "bold")
-      #h(1em, weak: false)]
+    v(line-height, weak: true)
+    (
+      block(above: 0pt, below: 0pt)
+        + box(text(it.body, size: 10pt, weight: "bold") + h(1em, weak: false), baseline: 0.2em)
+    )
   }
 
   /* FOOTNOTES
   __Explicit__
   «Indicate footnotes with a number in the text. Place the footnotes in 9 point font at the bottom of the column on which they appear. Precede the footnote block with a horizontal rule.»
 
-  __LaTeX__ (cogsci.sty lines 185-187):
-  \skip\footins: 9pt plus 4pt minus 2pt
-  ( \skip\footins - |\kern-3pt| = 9pt - 3pt = 6pt clearance )
-  \footnoterule: \kern-3pt \hrule width 5pc \kern 2.6pt
-  ( 5pc = 60pt wide rule )
-  \footnotesep: 6.65pt
+  __LaTeX__
+  \footnotesep=6.65pt
+  \skip\footins=9pt plus 4pt minus 2pt
+  \def\footnoterule{\kern-3pt \hrule width 5pc \kern 2.6pt}
+
+  | Parameter       | Value                       | Description                                            |
+  |-----------------|-----------------------------|--------------------------------------------------------|
+  | \skip\footins   | 9pt                         | Space between body text baseline and footnote rule     |
+  | \footnotesep    | 6.65pt                      | Height of strut before first footnote (vertical space) |
+  | \footnoterule   | \kern-3pt \hrule \kern2.6pt | Rule + kerns (5pc = 60pt wide rule)                    |
+  | \footnotesize   | 9pt font, 10pt baseline     |                                                        |
+
+  With \maxdepth=3pt and footnote descenders ~2.7pt, footnotes positioning is affected.
   */
   set footnote(numbering: "1")
 
   set footnote.entry(
     separator: line(length: 60pt, stroke: 0.5pt),
-    gap: if _mimic-latex { 4.6pt } else { 0.5em },
-    indent: if _mimic-latex { 12pt } else { indent },
-    clearance: if _mimic-latex { 6pt } else { 1em },
+    gap: if _mimic-latex { 2.8pt } else { 0.5em },
+    indent: if _mimic-latex { 12.7pt } else { indent },
+    clearance: if _mimic-latex { 9pt } else { 1em },
   )
 
   show footnote.entry: it => {
-    set text(size: 9pt)
+    set text(
+      size: 9pt,
+      top-edge: "cap-height",
+      bottom-edge: "descender", // must match main text to include descenders in layout bounds
+    )
     set par(
-      first-line-indent: if _mimic-latex { 9pt } else { indent },
+      first-line-indent: indent,
       hanging-indent: 0pt,
-      leading: calc-leading(9pt, 9pt),
-      spacing: calc-leading(9pt, 9pt),
+      leading: calc-leading(9pt, 10pt), // \footnotesize: 9pt font, 10pt baseline
+      spacing: calc-leading(9pt, 10pt),
     )
     it
   }
+
 
   /* FIGURES
   __Explicit__
@@ -462,13 +751,21 @@
     set par(first-line-indent: 0pt)
     it
   }
-  show figure: set block(spacing: if _mimic-latex { 10pt } else { 12pt })
-  show figure: set figure(gap: if _mimic-latex { 10pt } else { 12pt })
+  show figure: set block(
+    above: if _mimic-latex { 11pt } else { line-height },
+    below: if _mimic-latex { 17pt } else { line-height },
+  )
+  show figure: set figure(gap: if _mimic-latex { 17.5pt } else { line-height })
 
   /* TABLES
   __Explicit__
-  «Number tables consecutively. Place the table number and title (in 10 point font) above the table with one line space above the caption and one line space below it»
+  «Number tables consecutively. Place the table number and title (in 10 point) above the table with one line space above the caption and one line space below it»
   */
+  show figure.where(kind: table): set block(
+    above: if _mimic-latex { 21pt } else { line-height },
+    below: if _mimic-latex { 22.5pt } else { line-height },
+  )
+  show figure.where(kind: table): set figure(gap: if _mimic-latex { 10pt } else { line-height })
   show figure.where(kind: table): set figure.caption(position: top)
 
   // Table styling to match LaTeX tabular
@@ -477,11 +774,15 @@
   set table.hline(stroke: 0.4pt)
   set table.vline(stroke: 0.4pt)
 
+  show table: set text(
+    top-edge: "cap-height", /// "cap-height" is correct, don't change to "ascender"
+    bottom-edge: "descender",
+  )
   show table: set table(
     stroke: none,
     gutter: 0em,
     // align: left, // LaTeX default, but intentionally leaving out here
-    inset: (top: 2pt, bottom: 4pt, x: 8pt), // Less top padding, more bottom for descenders
+    inset: (top: 2pt, bottom: 1.3pt, x: indent),
     /* Debugging */
     // stroke: 1pt,
     // gutter: 1em,
@@ -490,15 +791,20 @@
 
   /* TITLEBOX
   __Explicit__
-  «Leave two line spaces between the last author listed and the text of the paper; the text of the paper (starting with the abstract) should begin no less than 2.75 inches below the top of the page.»
+  «Leave two line spaces between the last author affiliation and the text of the paper; the text of the paper (starting with the abstract) should begin no less than 2.75 inches below the top of the page.»
 
-  __LaTeX__ (lines 145-162):
-  \vbox to \titlebox{         % Minimum 5cm box (line 119)
-    {\LARGE\bf \@title \par}  % Title
-    \vskip 1em                % Gap after title (line 148)
-    \outauthor                % Authors
-    \vskip 2em                % Gap after authors (line 161)
+  __LaTeX__
+  \setlength\titlebox{1.75in}       % Minimum height from top margin to body
+  \def\@maketitle{%
+    ...
+    {\LARGE\bfseries \@title \par}  % Title: 14pt font, 17pt baseline
+    \vskip 1em                      % Gap after title
+    \cogsci@showauthor              % Authors
+    \vskip 24pt\relax               % 24pt buffer before body text
   }
+
+  Titlebox grows to fit content; always maintains 24pt buffer before body.
+  Body text starts at least 2.75in from top of page (1in margin + 1.75in titlebox).
   */
   let titlebox-content = {
     if title != none {
@@ -507,37 +813,44 @@
       «The title should be in 14 point bold font, centered.»
 
       __LaTeX__
-      \LARGE\bf = 14pt font with 17pt leading (cogsci.sty line 243)
+      {\LARGE\bfseries \@title \par}
+      \LARGE = 14pt font, 17pt baselineskip
       */
       align(center)[
-        #block(text(title, size: 14pt, weight: "bold", bottom-edge: "bounds"))
+        #block(text(
+          title,
+          size: 14pt,
+          weight: "bold",
+          top-edge: "cap-height",
+          bottom-edge: "descender",
+        ))
         #v(12pt, weak: true)
       ]
     }
-    block(above: 12pt, below: 12pt)[
+    block(above: line-height, below: line-height)[
       #if anonymize {
-        anonymous-authors
+        format-authors(((name: [Anonymous CogSci submission]),))
       } else {
-        authors
+        author-info
       }
     ]
-    v(if _mimic-latex { 2em } else { 12pt * 2 }, weak: false) // LaTeX \vskip 2em at end of titlebox (line 161)
+    v(if _mimic-latex { 2em } else { line-height * 2 }, weak: false) // LaTeX \vskip 2em at end of titlebox (line 161)
   }
 
   context {
-    let measured = measure(titlebox-content)
-    let latex-titlebox-height = 5cm + 2pt
-    let max-height-explicit = 2.75in - 1in // Maximum space from top margin (1in) to start of abstract
-    let max-height = if _mimic-latex { latex-titlebox-height } else { max-height-explicit }
-    let actual-height = measured.height
-    let exceeds-max = actual-height > max-height
+    let min-height-explicit = 2.75in - 1in // Minimum space from top margin (1in) to start of abstract
+    // let latex-titlebox-height = 1.75in + 2pt
+    // let min-height = if _mimic-latex { latex-titlebox-height } else { min-height-explicit }
 
-    // Red background if content exceeds maximum allowed height
-    let background = if exceeds-max { rgb("#d100003f") } else { none }
+    let min-height = min-height-explicit
 
-    // If content is smaller than max-height, add gap to reach max-height
-    // If content exceeds max-height, no additional gap needed (content pushes it down)
-    let gap-needed = calc.max(0pt, max-height - actual-height)
+    let content-size = measure(titlebox-content)
+
+    let actual-height = content-size.height
+    let expanding = actual-height > min-height
+
+    // let height-calculated = calc.max(min-height, content-size.height)
+    let gap-needed = calc.max(0pt, min-height - actual-height)
 
     place(
       top + center,
@@ -546,10 +859,9 @@
       clearance: gap-needed,
       block(
         width: 100%,
-        height: if exceeds-max { max-height } else { auto },
+        height: auto,
         breakable: false,
-        fill: background,
-        clip: exceeds-max, // Only clip if content exceeds max height
+        clip: false,
         titlebox-content,
       ),
     )
@@ -568,7 +880,7 @@
     // Runtime type validation
     assert(
       type(keywords-array) == array,
-      message: "format-keywords: must be an array, got " + str(type(keywords-array)),
+      message: "format-keywords: keywords-array must be an array, got " + str(type(keywords-array)),
     )
 
     text(size: 9pt)[
@@ -580,66 +892,105 @@
 
   /* ABSTRACT
   __Explicit__
-  «The abstract should be one paragraph, indented 1/8 inch on both sides, in 9 point font with single spacing.»
+  «The abstract should be one paragraph, no more than 150 words, indented 1/8 inch on both sides, in 9 point font with single spacing.»
 
   __Word__
   9pt font with exact 10pt line spacing
 
   __LaTeX__
-  abstract uses quote environment (1/8" indent) with \small (9pt/9pt)
+  \renewenvironment{abstract}{
+    \centerline{\normalsize\bfseries Abstract}
+    \vskip 1em
+    \begin{list}{}{%
+      \setlength{\leftmargin}{0.125in}%
+      \setlength{\rightmargin}{0.125in}%
+      \setlength{\topsep}{0pt}%
+      \setlength{\parsep}{10pt}%
+    }\item\relax
+    \small
+  }{\par\end{list}}
+
+  \small = 9pt font, 10pt baselineskip
   */
-  block([
+  block(above: 0pt, below: 0pt, inset: 0pt, outset: 0pt)[
     #pad(x: indent, top: 1pt, bottom: 2pt)[
       #set text(size: 9pt)  // LaTeX \small
       #set par(
         first-line-indent: indent,
         justify: true,
-        leading: if _mimic-latex { calc-leading(9pt, 9pt) } else { calc-leading(10pt, 9pt) }, // Word uses 10pt line spacing, but latex uses 9pt
-        spacing: if _mimic-latex { calc-leading(9pt, 9pt) } else { calc-leading(10pt, 9pt) },
+        leading: calc-leading(9pt, 10pt), // \small: 9pt font, 10pt baseline
+        spacing: calc-leading(9pt, 10pt),
       )
 
       /*
       __Explicit__
-      «The heading "*Abstract*" should be 10 point, bold, centered, with one line of space below it.»
-      «Following the abstract should be a blank line, followed by the header 'Keywords:' and a list of descriptive keywords separated by semicolons, all in 9 point font»
+      «The heading "Abstract" should be 10 point, bold, centered, with one line of space below it. This one-paragraph abstract section is required only for standard proceedings papers. Following the abstract should be a blank line, followed by the header "Keywords:" and a list of descriptive keywords separated by semicolons, all in 9 point font...»
 
       __Word__
       10pt bold centered heading "Abstract" with 6pt space below
 
       __LaTeX__
-      \renewenvironment{abstract}{\centerline{\bf Abstract}\begin{quote}\small}
-      The quote environment adds \topsep = 4pt (cogsci.sty line 193)
+      \centerline{\normalsize\bfseries Abstract}
+      \vskip 1em
       */
       #if abstract != none {
-        block(width: 100%, above: 0pt, below: 12pt)[
+        block(width: 100%, above: 0pt, below: line-height)[
           #align(center, heading(
             outlined: false,
             numbering: none,
-            text([Abstract], size: 10pt, weight: "bold", bottom-edge: "bounds"),
+            text(
+              [Abstract],
+              size: 10pt,
+              weight: "bold",
+              bottom-edge: "descender",
+            ),
           ))
         ]
         abstract
       }
 
       #if keywords != none and keywords.len() > 0 {
-        block(above: if _mimic-latex { 7pt } else { 9pt }, format-keywords(keywords)) // should be 9 but LaTeX uses less
+        block(above: 12pt, format-keywords(keywords)) // should be 9 but LaTeX uses less
       }
     ]
-  ])
+  ]
 
   /* BIBLIOGRAPHY
   __Explicit__
-  Use a first level section heading, "References", as shown below. Use a hanging indent style, with the first line of the reference flush against the left margin and subsequent lines indented by 1/8 inch.»
+  «Use a first level section heading, "References", as shown below. Use a hanging indent style, with the first line of the reference flush against the left margin and subsequent lines indented by 1/8 inch.»
+
+  __Typst__
+  Extremely hacky solution since `#show bibliography: set par(...)` no longer works in the latest Typst versions.
   */
-  show bibliography: set par(
-    first-line-indent: 0pt,
-    hanging-indent: indent,
-  )
+  show bibliography: bib-it => {
+    show block: block-it => context {
+      if block-it.body == auto {
+        block-it
+      } else {
+        if block-it.body.func() != [].func() {
+          // block-it.body
+          // parbreak()
+          block-it
+        } else {
+          // par(block-it.body)
+          // block-it.body
+          set par(
+            first-line-indent: 0pt,
+            hanging-indent: -6pt,
+          )
+          pad(left: 15pt)[
+            #par(block-it.body)]
+        }
+      }
+    }
+    bib-it
+  }
+
   set bibliography(title: "References", style: "apa")
 
   /* APA MODIFICATIONS
   __Explicit__
-  «Follow the APA Publication Manual for citation format, both within the text and in the reference list, with the following exceptions: (a) do not cite the page numbers of any book, including chapters in edited volumes; (b) use the same format for unpublished references as for published ones. Alphabetize references by the surnames of the authors, with single author entries preceding multiple author entries. Order references by the same authors by the year of publication, with the earliest first.»
+  «Follow the APA Publication Manual for citation format, both within the text and in the reference list, with the following exception: use the same format for unpublished references as for published ones. Alphabetize references by the surnames of the authors, with single author entries preceding multiple author entries. Order references by the same authors by the year of publication, with the earliest first. Include DOIs if available.»
   */
 
   body

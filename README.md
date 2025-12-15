@@ -2,21 +2,19 @@
 
 A [Typst](https://typst.app/) template for submissions to the _Annual Conference of the [Cognitive Science Society](https://cognitivesciencesociety.org/) (**CogSci**)_.
 
-This template aims to be a visual clone of the official LaTeX template.
-
 |                     Anonymized                     |                      Final                      |
 | :------------------------------------------------: | :---------------------------------------------: |
 | ![Anonymized submission](thumbnail-anonymized.png) | ![Final submission with authors](thumbnail.png) |
 
 ## Usage
 
-You will typically want to use this template by initializing a project with the CogSci boilerplate. The CogSci boilerplate (shown in the thumbnails) will give you the formatting specifications and examples of how to make citations, figures, tables, footnotes, and acknowledgments. You can generate the boilerplate (*a*) in the Typst web app or (*b*) locally. If you don't need the boilerplate, you can also just (*c*) import the template functions in any Typst document.
+You will typically want to use this template by initializing a project with the CogSci template. The CogSci template (shown in the thumbnails) will give you the formatting specifications and examples of how to make citations, figures, tables, footnotes, and acknowledgments. You can generate the template (*a*) in the Typst web app or (*b*) locally. If you don't need the template, you can also just (*c*) import the template functions in any Typst document.
 
-### (*a*) Initialize the boilerplate in the Typst web app
+### (*a*) Initialize the template in the Typst web app
 
 In the [Typst web app](https://typst.app/), click "Start from template" on the dashboard and search for `cogsci-conference`.
 
-### (*b*) Initialize the boilerplate locally
+### (*b*) Initialize the template locally
 
 You can use the [Typst CLI](https://github.com/typst/typst) to initialize the template locally:
 
@@ -30,16 +28,22 @@ cd cogsci-conference
 The API is described in the [Parameters](#parameters) section below.
 
 ```typst
-#import "@preview/cogsci-conference:0.1.0": cogsci, format-authors
+#import "@preview/cogsci-conference:0.1.1": cogsci, format-authors
 
 #show: cogsci.with(
   title: [CogSci Typst Template],
-  authors: format-authors(
-    (name: [Author One], email: "a1@university.edu", affiliation: [Department Details]),
-    (name: [Author Two], email: "a2@university.edu", affiliation: [Department Details]),
+  author-info: format-authors(
+    authors: (
+      (name: [Author N. One], email: "a1@uni.edu", super: [1]),
+      (name: [Author Number Two], super: [2]),
+    ),
+    affiliations: (
+      (super: [1], affil: [Department of Hypothetical Sciences, University of Illustrations]),
+      (super: [2], affil: [Department of Example Studies, University of Demonstrations]),
+    ),
   ),
   abstract: [The abstract.],
-  keywords: ("kw1", "kw2", "kw3",),
+  keywords: ("kw1", "kw2", "kw3"),
   anonymize: true,
   hyphenate: true,
 )
@@ -49,37 +53,45 @@ The API is described in the [Parameters](#parameters) section below.
 #bibliography("bibliography.bib")
 ```
 
-### Local usage notes
+### Fonts
 
-#### Composition
+This template requires the fonts [TeX Gyre Termes](https://www.gust.org.pl/projects/e-foundry/tex-gyre) and [TeX Gyre Termes Math](https://www.gust.org.pl/projects/e-foundry/tg-math/index_html), which are distributed under the [GUST Font License (GFL)](https://tug.org/fonts/licenses/GUST-FONT-LICENSE.txt). The Typst web app includes these fonts automatically. For local usage, you can install the fonts system-wide or pass the font directory path to the compiler. See the [Typst documentation on fonts](https://typst.app/docs/reference/text/text/#parameters-font) for details.
 
-If you're using Typst locally, I highly recommend trying the [Tinymist](https://myriad-dreamin.github.io/tinymist/) extension for [Visual Studio Code](https://code.visualstudio.com/): [**Tinymist Typst VS Code Extension**](https://marketplace.visualstudio.com/items?itemName=myriad-dreamin.tinymist). It makes for a superb writing experience.
+### Local Usage
+
+If you're using Typst locally, you might find it convenient to use the [Tinymist Typst VS Code Extension](https://marketplace.visualstudio.com/items?itemName=myriad-dreamin.tinymist) (the [Tinymist](https://myriad-dreamin.github.io/tinymist/) extension for [Visual Studio Code](https://code.visualstudio.com/)).
+
+To compile the PDF, use the Typst CLI or the Tinymist extension.
 
 #### Compilation
 
-To generate the PDF using the Typst CLI:
+With the Typst CLI:
 
 ```shell
-typst compile main.typ main.pdf
+typst compile --font-path <path-to-fonts-dir> --pdf-standard a-3u main.typ main.pdf
 ```
 
-**NB: It's recommended that you use a [PDF standard](https://www.adobe.com/uk/acrobat/resources/document-files/pdf-types.html) to ensure that the PDF is searchable, e.g. `a-3u`:**
+Specifying a [PDF standard](https://typst.app/docs/reference/pdf/#pdf-standards) like `--pdf-standard a-3u` is optional but ensures the PDF is searchable.
 
-```shell
-typst compile --pdf-standard a-3u main.typ main.pdf
-```
+If the fonts are installed system-wide, omit `--font-path`, otherwise use `--font-path <path-to-fonts-dir>` to specify the path to a directory containing the OTF files.
 
-## TWO IMPORTANT NOTES
+With the VS Code extension, use `"tinymist.fontPaths"` to specify an additional font directory. See the Tinymist [documentation](https://myriad-dreamin.github.io/tinymist/config/vscode.html) for details.
 
-1. DOUBLE-BLIND REVIEWING
+## Important Notes
 
-   - Starting in 2019, 6-page paper submissions are reviewed double-blind, so submissions must be anonymized.
+### Double-Blind Reviewing
 
-   - You can toggle the author details in your submission using the [`anonymize`](#submission-control) flag (this also prevents author info from being stored in the PDF metadata).
+Beginning in 2019, 6-page full paper submissions are reviewed double-blind, so submissions must be anonymized. **The policy for double-blind reviews is strictly enforced.** Ensure your submissions are anonymized before submission.
 
-2. CC-BY LICENSING
+You can toggle the author details in your submission using the [`anonymize`](#submission-control) flag (this also prevents author info from being stored in the PDF metadata).
 
-   - An online proceedings will be published by the Cognitive Science Society. At the time of final (camera-ready) submission authors will be required to agree to release of their proceedings contribution under a CC-BY license. This means that authors allow free reuse of their work provided the original authors are attributed. Please see the submissions website for more details.
+### Page Limits
+
+In the *initial submission*, full papers can be no longer than six pages plus an unlimited number of pages for references. In the *final submission*, full papers (including the title and authors) can be no longer than six pages plus an unlimited number of pages for acknowledgments and references.
+
+### CC-BY Licensing
+
+An online proceedings will be published by the Cognitive Science Society. At the time of final (camera-ready) submission, authors will be required to agree to release their proceedings contribution under a CC-BY license. This means that authors allow free reuse of their work provided the original authors are attributed.
 
 ## Parameters
 
@@ -89,11 +101,15 @@ The `cogsci()` template function accepts the following parameters:
 
 - **`title`** (content): The paper title.
 
-- **`authors`** (content): Pre-formatted author information. The template exports a `format-authors()` helper function that accepts an array of author dictionaries with keys `name`, `email`, and `affiliation`. You can pass your own custom formatted content to `authors` if you need different styling.
+- **`author-info`** (content): Pre-formatted author information. The template exports a `format-authors()` helper function that accepts:
+  - `authors`: Array of author dictionaries with keys `name`, `email` (optional), and `super` (superscript for affiliation reference)
+  - `affiliations`: Array of affiliation dictionaries with keys `super` (matching superscript) and `affil` (affiliation text)
+
+  You can pass your own custom formatted content to `author-info` if you need different styling.
 
 - **`abstract`** (content): The paper abstract.
 
-- **`keywords`** (array): Array of keyword strings, e.g., `("Bayesian model", "function learning", "emotion")`.
+- **`keywords`** (array): Array of keyword strings.
 
 ### Bibliography
 
@@ -125,17 +141,19 @@ The template exposes manual overrides for `text()`, `page()`, and `document()`. 
 
 ## Preparing an anonymized submission
 
-Set `#let anonymize = true`.
+Set `anonymize` to `true`.
 
 Remember that you need to leave at least 2.75 inches between the top of the first page and the abstract and text of your paper. Since the top margin needs to be 1 inch on all pages, this means that there needs to be at least 1.75 inches of space on page 1 in which nothing but your paper title and **Anonymous CogSci submission** appears. Additionally, please remember not to include acknowledgments in the anonymized version of your paper.
 
+The entire content of your anonymized paper can be no longer than six pages, plus unlimited space for references.
+
 ## Preparing the de-anonymized final version of your accepted paper
 
-Set `#let anonymize = false`.
+Set `anonymize` to `false`.
 
 In the final version of the paper, the title, author, abstract, and text of the paper must fit within six pages. Unlimited additional pages can be used for acknowledgments and references. In the final version of the paper for the proceedings (but not the initial anonymized submission), be sure to include any acknowledgments that may be appropriate.
 
-Once again, make sure that you adhere to the general formatting instructions, including that there are at least 2.75 inches between the top of page 1 and the start of the abstract and text.
+In the *final submission*, the text of the paper, including all figures, tables and author info, must fit on six pages. An unlimited number of pages can be used for acknowledgments and references.
 
 ## Requirements
 
@@ -146,7 +164,5 @@ Once again, make sure that you adhere to the general formatting instructions, in
 This template is distributed under the MIT License.
 
 ## Author
-
-**Dae Houlihan**, based on the LaTeX template by Ashwin Ram, Johanna Moore, David Noelle, Pat Langley, Ramin Charles Nakisa, Tina Eliassi-Rad, Trisha Yannuzzi, Mary Ellen Foster, Ken Forbus, Eli M. Silk, Niels Taatgen and Roger Levy.
 
 [![GitHub](https://img.shields.io/badge/github-daeh-181717?style=for-the-badge&logo=github)](https://github.com/daeh) [![Personal Website](https://img.shields.io/badge/personal%20website-daeh.info-orange?style=for-the-badge)](https://daeh.info) [![BlueSky](https://img.shields.io/badge/bsky-@dae.bsky.social-skyblue?style=for-the-badge&logo=bluesky)](https://bsky.app/profile/dae.bsky.social)
