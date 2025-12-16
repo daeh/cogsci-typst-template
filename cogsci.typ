@@ -1,8 +1,7 @@
-// CogSci Conference Template
-
-#let _mimic-latex = true // Set to false to disable LaTeX visual mimicry features
-// #let _mimic-latex = false
-
+//
+// CogSci Proceedings Template
+// Style file for the Annual Meeting of the Cognitive Science Society
+//
 
 /// Adds _ad hoc_ vertical padding to adjust page layout to better match the LaTeX template output.
 ///
@@ -11,7 +10,7 @@
 /// - amount (fraction, relative): How much spacing to insert.
 ///
 /// -> content, none
-#let ad-hoc-padding(amount) = if _mimic-latex { v(amount, weak: false) } else { none }
+#let ad-hoc-padding(amount) = v(amount, weak: false)
 
 
 /// Formats author and affiliation information according to CogSci conference style.
@@ -240,36 +239,54 @@
   let is-empty-super(s) = s == none or s == []
 
   // Build author entries: name + optional superscript + optional email
+  // Use non-breaking spaces (~) within each entry to prevent line breaks.
+  // This avoids box() which breaks text metrics with global top-edge/bottom-edge settings.
   let author-entries = author-list.map(entry => {
     let has-super = not is-empty-super(entry.super)
     let has-email = entry.email != none
 
+    // Replace spaces in name with non-breaking spaces (U+00A0)
+    // Handles both string names and simple content names like [Author Name]
+    let name = if type(entry.name) == str {
+      entry.name.replace(" ", "\u{00A0}")
+    } else if "text" in entry.name.fields() {
+      entry.name.fields().text.replace(" ", "\u{00A0}")
+    } else {
+      entry.name // Complex content: use as-is (may allow breaks)
+    }
+
     if has-email {
       if has-super {
-        [#entry.name (#entry.email)#super[#entry.super]]
+        [#name~(#entry.email)#super[#entry.super]]
       } else {
-        [#entry.name (#entry.email)]
+        [#name~(#entry.email)]
       }
     } else {
       if has-super {
-        [#entry.name#super[#entry.super]]
+        [#name#super[#entry.super]]
       } else {
-        [#entry.name]
+        [#name]
       }
     }
   })
 
-  // Join with comma/ampersand, boxing to maintain baseline alignment
+  // Join authors with comma/ampersand, binding & to second-to-last author
+  // Pattern: "A", "A & B", "A, B & C", "A, B, C & D"
+  // NOTE: Do NOT use box() here - it breaks text metrics when top-edge/bottom-edge
+  // are set globally (causes ~2pt extra height). Use content concatenation instead.
   let authors-line = if author-entries.len() == 0 {
     []
   } else if author-entries.len() == 1 {
-    box(author-entries.at(0))
+    author-entries.at(0)
   } else if author-entries.len() == 2 {
-    box(author-entries.at(0)) + [ ] + box([&~] + author-entries.at(1))
+    // "A &" + " " + "B"
+    author-entries.at(0) + [~& ] + author-entries.at(1)
   } else {
-    // 3+ authors: "A, B, ... & Z"
-    let parts = author-entries.slice(0, -1).map(e => box[#e,])
-    parts.join([ ]) + [ ] + box([&~] + author-entries.last())
+    // 3+ authors: "A," + " " + "B &" + " " + "C"
+    let first-entries = author-entries.slice(0, -2).map(e => e + [, ])
+    let second-to-last = author-entries.at(-2) + [~& ]
+    let last = author-entries.last()
+    first-entries.join([]) + second-to-last + last
   }
 
   // Build affiliation lines: superscript label + affiliation text
@@ -282,23 +299,15 @@
     }
   })
 
-  let divider = linebreak
-  return align(center)[
-    #set par(justify: false)
-
-    #set par(
-      leading: 3pt,
-      spacing: 3pt,
-    ) if _mimic-latex
-
-    #if _mimic-latex { v(0.7pt) }
-
-    #text(size: 11pt, weight: "bold")[#authors-line]
-    #if affil-lines.len() > 0 {
-      divider()
-      text(size: 10pt, weight: "regular")[#affil-lines.join(divider())]
-    }
-  ]
+  // Produce a single content block with linebreaks, matching manual formatting structure
+  if affil-lines.len() > 0 {
+    return [
+      #text(size: 11pt, weight: "bold", authors-line) \
+      #(affil-lines.join(linebreak()))
+    ]
+  } else {
+    return text(size: 11pt, weight: "bold", authors-line)
+  }
 }
 
 
@@ -354,6 +363,7 @@
   text-kwargs: (:),
   page-kwargs: (:),
   document-kwargs: (:),
+  mimic-latex: true, // WIP feature to better match LaTeX output // TODO: document
   body,
 ) = {
   // Runtime type validation for parameters
@@ -646,7 +656,7 @@
   show heading.where(level: 1): it => {
     set block(
       above: line-height,
-      below: if _mimic-latex { 5.5pt } else { line-height / 4 },
+      below: if mimic-latex { 5.5pt } else { line-height / 4 },
     )
     set text(
       size: 12pt,
@@ -668,8 +678,8 @@
   */
   show heading.where(level: 2): it => {
     set block(
-      above: if _mimic-latex { line-height + 0.3pt } else { line-height },
-      below: if _mimic-latex { 5.1pt } else { line-height / 4 },
+      above: if mimic-latex { line-height + 0.3pt } else { line-height },
+      below: if mimic-latex { 5.1pt } else { line-height / 4 },
     ) // explicitly, it should be `block(above: 11pt, below: 3pt)`
     set text(size: 11pt, weight: "bold")
     it
@@ -691,8 +701,7 @@
   show heading.where(level: 3): it => {
     v(line-height, weak: true)
     (
-      block(above: 0pt, below: 0pt)
-        + box(text(it.body, size: 10pt, weight: "bold") + h(1em, weak: false), baseline: 0.2em)
+      block(above: 0pt, below: 0pt) + text(it.body + h(0.5em, weak: false), size: 10pt, weight: "bold")
     )
   }
 
@@ -718,9 +727,9 @@
 
   set footnote.entry(
     separator: line(length: 60pt, stroke: 0.5pt),
-    gap: if _mimic-latex { 2.8pt } else { 0.5em },
-    indent: if _mimic-latex { 12.7pt } else { indent },
-    clearance: if _mimic-latex { 9pt } else { 1em },
+    gap: if mimic-latex { 2.8pt } else { 0.5em },
+    indent: if mimic-latex { 12.7pt } else { indent },
+    clearance: if mimic-latex { 9pt } else { 1em },
   )
 
   show footnote.entry: it => {
@@ -752,20 +761,20 @@
     it
   }
   show figure: set block(
-    above: if _mimic-latex { 11pt } else { line-height },
-    below: if _mimic-latex { 17pt } else { line-height },
+    above: if mimic-latex { 11pt } else { line-height },
+    below: if mimic-latex { 17pt } else { line-height },
   )
-  show figure: set figure(gap: if _mimic-latex { 17.5pt } else { line-height })
+  show figure: set figure(gap: if mimic-latex { 17.5pt } else { line-height })
 
   /* TABLES
   __Explicit__
   «Number tables consecutively. Place the table number and title (in 10 point) above the table with one line space above the caption and one line space below it»
   */
   show figure.where(kind: table): set block(
-    above: if _mimic-latex { 21pt } else { line-height },
-    below: if _mimic-latex { 22.5pt } else { line-height },
+    above: if mimic-latex { 21pt } else { line-height },
+    below: if mimic-latex { 22.5pt } else { line-height },
   )
-  show figure.where(kind: table): set figure(gap: if _mimic-latex { 10pt } else { line-height })
+  show figure.where(kind: table): set figure(gap: if mimic-latex { 10pt } else { line-height })
   show figure.where(kind: table): set figure.caption(position: top)
 
   // Table styling to match LaTeX tabular
@@ -806,51 +815,67 @@
   Titlebox grows to fit content; always maintains 24pt buffer before body.
   Body text starts at least 2.75in from top of page (1in margin + 1.75in titlebox).
   */
-  let titlebox-content = {
-    if title != none {
-      /* TITLE
-      __Explicit__
-      «The title should be in 14 point bold font, centered.»
-
-      __LaTeX__
-      {\LARGE\bfseries \@title \par}
-      \LARGE = 14pt font, 17pt baselineskip
-      */
-      align(center)[
-        #block(text(
-          title,
-          size: 14pt,
-          weight: "bold",
-          top-edge: "cap-height",
-          bottom-edge: "descender",
-        ))
-        #v(12pt, weak: true)
-      ]
+  /* TITLEBOX STRUCTURE
+  LaTeX uses one \centering for the entire titlebox:
+    \setbox\@tempboxa=\vbox{%
+      \centering              % One centering context for all content
+      {\LARGE\bfseries \@title \par}%
+      \vskip 1em%
+      \cogsci@showauthor      % Inherits centering
+      \vskip 24pt\relax       % Buffer before body text (INSIDE measured box)
+    }%
+    \ifdim\ht\@tempboxa<\titlebox
+      \vbox to\titlebox{\unvbox\@tempboxa\vfill}%  % Pad to min height
+    \else
+      \box\@tempboxa          % Use as-is if content exceeds min height
+    \fi
+  */
+  let titlebox-content = align(center)[
+    // TITLE
+    // LaTeX: {\LARGE\bfseries \@title \par} - 14pt font, 17pt baselineskip
+    #if title != none {
+      set par(
+        leading: calc-leading(14pt, 17pt),
+        spacing: calc-leading(14pt, 17pt),
+        justify: true,
+      )
+      block(text(
+        title,
+        size: 14pt,
+        weight: "bold",
+        top-edge: "cap-height",
+        bottom-edge: "descender",
+      ))
     }
-    block(above: line-height, below: line-height)[
+
+    // LaTeX: \vskip 1em (10pt at \normalsize)
+    // Empirically 12.7pt needed to match LaTeX visually due to spacing model differences
+    #v(if mimic-latex { 12.7pt } else { 12pt }, weak: true)
+
+    // AUTHOR BLOCK
+    // LaTeX: \cogsci@showauthor - inherits \centering from titlebox
+    #block[
+      #set par(justify: false)
       #if anonymize {
         format-authors(((name: [Anonymous CogSci submission]),))
       } else {
         author-info
       }
     ]
-    v(if _mimic-latex { 2em } else { line-height * 2 }, weak: false) // LaTeX \vskip 2em at end of titlebox (line 161)
-  }
+  ]
 
+  // measure() defaults to infinite width, which produces incorrect height for wrapped text. Thus, actual text width (7in) must be provided.
   context {
-    let min-height-explicit = 2.75in - 1in // Minimum space from top margin (1in) to start of abstract
-    // let latex-titlebox-height = 1.75in + 2pt
-    // let min-height = if _mimic-latex { latex-titlebox-height } else { min-height-explicit }
+    let min-height = 2.75in - 1in // Minimum titlebox height (body starts at 2.75in from page top)
+    let buffer = if mimic-latex { 24pt - 2pt } else { line-height * 2 } // LaTeX: \vskip 24pt\relax
 
-    let min-height = min-height-explicit
+    // Measure with text width constraint (__Explicit__: «The text of the paper should be formatted in two columns with an overall width of 7 inches ...»)
+    let content-height = measure(width: 7in, titlebox-content).height
 
-    let content-size = measure(titlebox-content)
-
-    let actual-height = content-size.height
-    let expanding = actual-height > min-height
-
-    // let height-calculated = calc.max(min-height, content-size.height)
-    let gap-needed = calc.max(0pt, min-height - actual-height)
+    // clearance handles BOTH the min-height padding AND the 24pt buffer:
+    // - If content is small: clearance = min-height - content (ensures body at 2.75in)
+    // - If content is large: clearance = buffer (ensures at least 24pt gap)
+    let gap-needed = calc.max(buffer, min-height - content-height)
 
     place(
       top + center,
@@ -935,13 +960,15 @@
       */
       #if abstract != none {
         block(width: 100%, above: 0pt, below: line-height)[
+          #if mimic-latex { v(-1pt, weak: false) }
           #align(center, heading(
             outlined: false,
             numbering: none,
             text(
-              [Abstract],
+              "Abstract",
               size: 10pt,
               weight: "bold",
+              top-edge: "cap-height",
               bottom-edge: "descender",
             ),
           ))
