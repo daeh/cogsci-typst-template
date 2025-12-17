@@ -8,13 +8,17 @@ A [Typst](https://typst.app/) template for submissions to the _Annual Conference
 
 ## Usage
 
-You will typically want to use this template by initializing a project with the 6-page full paper example. The example document (previewed in the thumbnails) provides formatting specifications and examples of citations, figures, tables, footnotes, and acknowledgments. You can generate the example (*a*) in the Typst web app or (*b*) locally. If you don't need the example, you can also just (*c*) import the template functions in any Typst document.
+You will typically want to use this template by initializing a project with the 6-page full paper example. The example document (previewed in the thumbnails) provides formatting specifications and examples of citations, figures, tables, footnotes, and acknowledgments. You can generate the example document (*a*) in the Typst web app or (*b*) locally. If you don't need the example document, you can also just (*c*) import the template functions in any Typst file.
 
 ### (*a*) Initialize the template in the Typst web app
 
-In the [Typst web app](https://typst.app/) dashboard, click "Start from template" and search for `cogsci-conference`. 
+Follow this link to open `cogsci-conference` in the template selector of the Typst web app: <https://typst.app/app?template=cogsci-conference&version=0.1.3>.
 
-**Note**: If you don't see the dashboard when you visit <https://typst.app/>, you need to create and/or log in to an account.
+Or, on the [Typst Universe `cogsci-conference` project page](https://typst.app/universe/package/cogsci-conference), click the "Create project in app" button.
+
+Or, on the [Typst web app](https://typst.app/) dashboard, click "Start from template" and search for `cogsci-conference`.
+
+**Note**: You need to log into a typst.app account.
 
 ### (*b*) Initialize the template locally
 
@@ -25,14 +29,14 @@ typst init @preview/cogsci-conference
 cd cogsci-conference
 ```
 
-See [Local Usage](#local-usage) notes below.
+See [Local Usage Notes](#local-usage-notes) below.
 
 ### (*c*) Import the template functions
 
 The API is described in the [Parameters](#parameters) section below.
 
 ```typst
-#import "@preview/cogsci-conference:0.1.2": cogsci, format-authors
+#import "@preview/cogsci-conference:0.1.3": cogsci, format-authors
 
 #show: cogsci.with(
   title: [CogSci Typst Template],
@@ -57,11 +61,11 @@ The API is described in the [Parameters](#parameters) section below.
 #bibliography("bibliography.bib")
 ```
 
-### Local Usage
+### Local Usage Notes
 
 #### Word processing with [Tinymist](https://myriad-dreamin.github.io/tinymist/)
 
-If you're using Typst locally, I recommend the [Tinymist Typst VS Code Extension](https://marketplace.visualstudio.com/items?itemName=myriad-dreamin.tinymist) for [Visual Studio Code](https://code.visualstudio.com/), which provides live preview, syntax highlighting, and error diagnostics.
+If you're using Typst locally, I recommend the [Tinymist Typst VS Code Extension](https://marketplace.visualstudio.com/items?itemName=myriad-dreamin.tinymist) for [Visual Studio Code](https://code.visualstudio.com/), which provides an integrated language server with live preview, semantic highlighting, hover documentation, and linting.
 
 #### Fonts
 
@@ -80,7 +84,7 @@ To compile a PDF using the Typst CLI:
 typst compile --font-path <path-to-fonts-dir> --pdf-standard a-3u main.typ output.pdf
 ```
 
-If the fonts are installed system-wide, you can omit `--font-path`. Otherwise, use `--font-path <path-to-fonts-dir>` to specify a directory containing the OTF files. With the [Tinymist Typst VS Code Extension](https://marketplace.visualstudio.com/items?itemName=myriad-dreamin.tinymist), specify the font directory with the `tinymist.fontPaths` setting (see the Tinymist [documentation](https://myriad-dreamin.github.io/tinymist/config/vscode.html) for details).
+If the required fonts are installed system-wide, you can omit `--font-path`. Otherwise, use `--font-path <path-to-fonts-dir>` to specify a directory containing the OTF files. With the [Tinymist Typst VS Code Extension](https://marketplace.visualstudio.com/items?itemName=myriad-dreamin.tinymist), specify the font directory with the `tinymist.fontPaths` setting (see the Tinymist [documentation](https://myriad-dreamin.github.io/tinymist/config/vscode.html) for details).
 
 Specifying a [PDF standard](https://typst.app/docs/reference/pdf/#pdf-standards) like `--pdf-standard a-3u` is optional but ensures that the PDF text is searchable and accessible.
 
@@ -94,7 +98,7 @@ The `cogsci()` template function accepts the following parameters:
 
 - **`title`** (content): The paper title.
 
-- **`author-info`** (content): Formatted author information (ignored when `anonymize` is `true`). The template exports the [`format-authors()`](#author-formatting) helper function, which formats author information automatically. If you wish to format the author information manually, pass content directly to `author-info`. 
+- **`author-info`** (content): Formatted author information (ignored when `anonymize` is `true`). The template exports the [`format-authors()`](#author-formatting) helper function, which formats author information automatically. If you wish to format the author information manually, pass content directly to `author-info`.
 
 - **`abstract`** (content): The paper abstract.
 
@@ -118,7 +122,7 @@ keyword arguments with arrays of dictionaries:
       (super: [2], affil: [Department of Example Studies, University of Demonstrations]),
     ),
   ),
-  ...
+  // ...
 )
 ```
 
@@ -133,7 +137,7 @@ positional arguments without superscripts:
     ),
     [Shared Affiliation Details],
   ),
-  ...
+  // ...
 )
 ```
 
@@ -146,7 +150,7 @@ You can also bypass `format-authors()` and pass formatted content directly:
     #super[1~]Department of Hypothetical Sciences, University of Illustrations \
     #super[2~]Department of Example Studies, University of Demonstrations
   ],
-  ...
+  // ...
 )
 ```
 
@@ -178,7 +182,6 @@ The template exposes manual overrides for `text()`, `page()`, and `document()`. 
 - **`page-kwargs`** (dictionary): expands into `set page(..page-kwargs)`
 - **`document-kwargs`** (dictionary): expands into `set document(..document-kwargs)`
 
-
 ## Requirements
 
 - Typst `v0.14.0` or later (use the [web app](https://typst.app/) or [install locally](https://github.com/typst/typst?tab=readme-ov-file#installation), e.g. with `brew install typst`)
@@ -188,6 +191,12 @@ The template exposes manual overrides for `text()`, `page()`, and `document()`. 
 ## License
 
 This template is distributed under the MIT License.
+
+## Related
+
+Latest submission guidelines: <https://cognitivesciencesociety.org/submissions/>.
+
+Cognitive Science Society template repository (includes 6-page full paper and 2-page short summary examples that use this template): <https://github.com/neilbramley/cogscisoc/>.
 
 ## Author
 
