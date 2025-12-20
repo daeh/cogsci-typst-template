@@ -3,15 +3,6 @@
 // Style file for the Annual Meeting of the Cognitive Science Society
 //
 
-/// Adds _ad hoc_ vertical padding to adjust page layout to better match the LaTeX template output.
-///
-/// LaTeX uses flexible spacing to align the last line of a column with the bottom of the page, whereas Typst does not. For the sake of matching the appearance of LaTeX output, we add some _ad hoc_ vertical space.
-///
-/// - amount (fraction, relative): How much spacing to insert.
-///
-/// -> content, none
-#let ad-hoc-padding(amount) = v(amount, weak: false)
-
 
 /// Formats author and affiliation information according to CogSci conference style.
 ///
@@ -725,8 +716,14 @@
   */
   set footnote(numbering: "1")
 
+  let footnote-separator-line = line(length: 60pt, stroke: 0.5pt)
   set footnote.entry(
-    separator: line(length: 60pt, stroke: 0.5pt),
+    separator: if mimic-latex {
+      footnote-separator-line
+      v(1.7pt) // raise separator by adding extra padding below it
+    } else {
+      footnote-separator-line
+    },
     gap: if mimic-latex { 2.8pt } else { 0.5em },
     indent: if mimic-latex { 12.7pt } else { indent },
     clearance: if mimic-latex { 9pt } else { 1em },

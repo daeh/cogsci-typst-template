@@ -12,9 +12,13 @@ You will typically want to use this template by initializing a project with the 
 
 ### (*a*) Initialize the template in the Typst web app
 
-In the [Typst web app](https://typst.app/) dashboard, click "Start from template" and search for `cogsci-conference`. 
+Follow this link to open `cogsci-conference` in the template selector of the Typst web app: <https://typst.app/app?template=cogsci-conference&version=0.1.3>.
 
-**Note**: If you don't see the dashboard when you visit <https://typst.app/>, you need to create and/or log in to an account.
+Or, on the [Typst Universe `cogsci-conference` project page](https://typst.app/universe/package/cogsci-conference), click the "Create project in app" button.
+
+Or, on the [Typst web app](https://typst.app/) dashboard, click "Start from template" and search for `cogsci-conference`. 
+
+**Note**: You need to create and/or log into a typst.app account.
 
 ### (*b*) Initialize the template locally
 
@@ -32,7 +36,7 @@ See [Local Usage Notes](#local-usage-notes) below.
 The API is described in the [Parameters](#parameters) section below.
 
 ```typst
-#import "@preview/cogsci-conference:0.1.2": cogsci, format-authors
+#import "@preview/cogsci-conference:0.1.3": cogsci, format-authors
 
 #show: cogsci.with(
   title: [CogSci Typst Template],
@@ -188,6 +192,12 @@ The template exposes manual overrides for `text()`, `page()`, and `document()`. 
 ## License
 
 This template is distributed under the MIT License.
+
+## Related
+
+Latest submission guidelines: <https://cognitivesciencesociety.org/submissions/>.
+
+Cognitive Science Society template repository (includes 6-page full paper and 2-page short summary examples that use this template): <https://github.com/neilbramley/cogscisoc/>.
 
 ## Author
 
